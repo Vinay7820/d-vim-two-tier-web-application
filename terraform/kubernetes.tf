@@ -30,7 +30,7 @@ resource "aws_security_group" "k8s_sg" {
 # Managed Kubernetes Cluster
 resource "aws_eks_cluster" "interview_k8s" {
   name     = "interview-cluster"
-  role_arn = "arn:aws:iam::123456789012:role/eks-cluster-role" # ⬅️ Replace with your EKS IAM role ARN
+  role_arn = "arn:aws:iam::150575195000:user/d-vim" # ⬅️ Replace with your EKS IAM role ARN
   vpc_config {
     subnet_ids = [aws_subnet.private_subnet.id]
   }
@@ -39,7 +39,7 @@ resource "aws_eks_cluster" "interview_k8s" {
 # Node Group for K8s workers
 resource "aws_eks_node_group" "node_group" {
   cluster_name    = aws_eks_cluster.interview_k8s.name
-  node_role_arn   = "arn:aws:iam::123456789012:role/eks-node-role" # ⬅️ Replace with your EKS node IAM role ARN
+  node_role_arn   = "arn:aws:iam::150575195000:user/d-vim" # ⬅️ Replace with your EKS node IAM role ARN
   subnet_ids      = [aws_subnet.private_subnet.id]
   instance_types  = ["t2.medium"]
   scaling_config {
