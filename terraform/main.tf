@@ -1,14 +1,3 @@
-resource "aws_vpc" "interview_vpc" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  tags = {
-    Name = "interview-vpc"
-  }
-}
-
-
 # ⚠️ Intentional Weakness: Overly Permissive IAM Role
 resource "aws_iam_role" "overly_permissive_role" {
   name = "OverlyPermissiveRole"
