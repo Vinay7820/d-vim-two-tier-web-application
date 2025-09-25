@@ -1,7 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: tasky
+  name: tasky-deployment
+  labels:
+    app: tasky
 spec:
   replicas: 2
   selector:
@@ -13,42 +15,40 @@ spec:
         app: tasky
     spec:
       containers:
-      - name: tasky
-        image: <ECR_REPOSITORY>:latest
-        env:
-        - name: MONGO_URL
-          value: "mongodb://<mongo-vm-private-ip>:27017/tasky"
+        - name: tasky-app
+          image: tasky-app:latest # Or push to DockerHub/ECR and use repo URL
           ports:
-          - containerPort: 3000
-      serviceAccountName: admin-sa
+            - containerPort: 3000
+          env:
+            - name: MONGO_URL
+              value: "mongodb://<mongodb-service>:27017/taskydb"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: tasky-svc
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: tasky
   ports:
-  - port: 80
-    targetPort: 3000
+    - port: 80
+      targetPort: 3000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: tasky-ingress
-  annotations:
-    kubernetes.io/ingress.class: alb
 spec:
+  ingressClassName: nginx
   rules:
-  - host: tasky.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: tasky-svc
-            port:
-              number: 80
+    - host: tasky.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tasky-svc
+                port:
+                  number: 80
