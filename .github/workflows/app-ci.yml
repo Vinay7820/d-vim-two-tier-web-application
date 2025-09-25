@@ -35,7 +35,7 @@ steps:
 - name: Setup kubectl
 uses: azure/setup-kubectl@v3
 with:
-version: 'v1.27.0'
+version: 'v1.33.0'
 - name: Configure kubeconfig
 run: |
 echo "${{ secrets.KUBECONFIG }}" > $HOME/.kube/config
