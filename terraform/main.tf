@@ -59,7 +59,7 @@ resource "aws_security_group" "vm_sg" {
 # The VM
 resource "aws_instance" "mongodb_vm" {
   # ⚠️ Intentional Weakness: Use an AMI that is 1+ year outdated
-  ami           = "ami-0a1fbd8b9394745b2" # ⬅️ Replace with an outdated AMI ID
+  ami           = "ami-03d5c68bab01f3496" # ⬅️ Replace with an outdated AMI ID
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.vm_sg.id]
