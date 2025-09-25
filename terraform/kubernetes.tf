@@ -27,54 +27,78 @@ resource "aws_security_group" "k8s_sg" {
   }
 }
 
-resource "aws_subnet" "public_subnet_a" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "ap-south-1a"
-}
-
-resource "aws_subnet" "public_subnet_b" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "ap-south-1b"
-}
-
-##################################################
-# 1️⃣ Create IAM Role for EKS Cluster
-##################################################
-resource "aws_iam_role" "eks_role" {
-  name = "interview-eks-role"
+############################################
+# EKS Cluster IAM Role
+############################################
+resource "aws_iam_role" "eks_cluster_role" {
+  name = "eks-cluster-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "eks.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+      }
+    ]
   })
 }
 
-# Attach the EKS Cluster Policy
-resource "aws_iam_role_policy_attachment" "eks_policy_attachment" {
-  role       = aws_iam_role.eks_role.name
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
+  role       = aws_iam_role.eks_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-# (Optional) Attach additional policies if needed
-resource "aws_iam_role_policy_attachment" "eks_vpc_attachment" {
-  role       = aws_iam_role.eks_role.name
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSServicePolicy" {
+  role       = aws_iam_role.eks_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
 }
 
-##################################################
-# 2️⃣ Create the EKS Cluster
-##################################################
-resource "aws_eks_cluster" "interview_k8s" {
-  name     = "interview-cluster"
-  role_arn = aws_iam_role.eks_role.arn
+############################################
+# EKS Node Group IAM Role
+############################################
+resource "aws_iam_role" "eks_node_role" {
+  name = "eks-node-role"
 
-  version = "1.33"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEKSWorkerNodePolicy" {
+  role       = aws_iam_role.eks_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEC2ContainerRegistryReadOnly" {
+  role       = aws_iam_role.eks_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEKS_CNI_Policy" {
+  role       = aws_iam_role.eks_node_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+############################################
+# EKS Cluster
+############################################
+resource "aws_eks_cluster" "eks_cluster" {
+  name     = "interview-eks"
+  role_arn = aws_iam_role.eks_cluster_role.arn
+  version  = "1.26"
 
   vpc_config {
     subnet_ids = [
@@ -84,21 +108,46 @@ resource "aws_eks_cluster" "interview_k8s" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.eks_policy_attachment,
-    aws_iam_role_policy_attachment.eks_vpc_attachment
+    aws_iam_role_policy_attachment.eks_cluster_AmazonEKSClusterPolicy,
+    aws_iam_role_policy_attachment.eks_cluster_AmazonEKSServicePolicy
   ]
 }
 
+############################################
+# EKS Node Group
+############################################
+resource "aws_eks_node_group" "eks_nodes" {
+  cluster_name    = aws_eks_cluster.eks_cluster.name
+  node_group_name = "eks-nodes"
+  node_role_arn   = aws_iam_role.eks_node_role.arn
+  subnet_ids      = [
+    aws_subnet.public_subnet_a.id,
+    aws_subnet.public_subnet_b.id
+  ]
+  instance_types  = ["t3.medium"]
 
-# Node Group for K8s workers
-resource "aws_eks_node_group" "node_group" {
-  cluster_name    = aws_eks_cluster.interview_k8s.name
-  node_role_arn   = "arn:aws:iam::150575195000:user/d-vim" # ⬅️ Replace with your EKS node IAM role ARN
-  subnet_ids      = [aws_subnet.private_subnet.id]
-  instance_types  = ["t2.medium"]
   scaling_config {
     desired_size = 2
     max_size     = 3
     min_size     = 1
   }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_worker_AmazonEKSWorkerNodePolicy,
+    aws_iam_role_policy_attachment.eks_worker_AmazonEC2ContainerRegistryReadOnly,
+    aws_iam_role_policy_attachment.eks_worker_AmazonEKS_CNI_Policy
+  ]
+}
+
+############################################
+# Kubernetes Provider (uses local kubeconfig)
+############################################
+provider "kubernetes" {
+  host                   = aws_eks_cluster.eks_cluster.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.eks_cluster.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks_auth.token
+}
+
+data "aws_eks_cluster_auth" "eks_auth" {
+  name = aws_eks_cluster.eks_cluster.name
 }
