@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: tasky-app
-          image: tasky-app:latest # Or push to DockerHub/ECR and use repo URL
+          image: vinay7820/tasky-app:latest # Or push to DockerHub/ECR and use repo URL
           ports:
             - containerPort: 3000
           env:
