@@ -62,7 +62,7 @@ resource "aws_eks_cluster" "interview_k8s" {
   name     = "interview-cluster"
   role_arn = aws_iam_role.eks_role.arn
 
-  version = "1.27"
+  version = "1.26"
 
   vpc_config {
     subnet_ids = [aws_subnet.public_subnet.id]  # Your existing subnets
