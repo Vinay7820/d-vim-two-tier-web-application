@@ -37,7 +37,7 @@ resource "aws_iam_instance_profile" "instance_profile" {
 
 # Security Group for the VM
 resource "aws_security_group" "vm_sg" {
-  vpc_id = aws_vpc.interview_vpc.id
+  vpc_id = aws_vpc.main.id
   ingress {
     from_port   = 22
     to_port     = 22
