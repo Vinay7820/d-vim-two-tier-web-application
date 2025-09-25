@@ -1,6 +1,6 @@
 # K8s Cluster Security Group
 resource "aws_security_group" "k8s_sg" {
-  vpc_id = aws_vpc.interview_vpc.id
+  vpc_id = aws_vpc.main.id
   ingress {
     from_port   = 27017 # MongoDB default port
     to_port     = 27017
