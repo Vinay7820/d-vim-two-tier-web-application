@@ -98,7 +98,7 @@ resource "aws_iam_role_policy_attachment" "eks_worker_AmazonEKS_CNI_Policy" {
 resource "aws_eks_cluster" "eks_cluster" {
   name     = "interview-eks"
   role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = "1.26"
+  version  = "1.33"
 
   vpc_config {
     subnet_ids = [
