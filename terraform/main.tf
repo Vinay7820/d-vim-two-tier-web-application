@@ -61,7 +61,7 @@ resource "aws_instance" "mongodb_vm" {
   # ⚠️ Intentional Weakness: Use an AMI that is 1+ year outdated
   ami           = "ami-05a37c0f521bacf38" # ⬅️ Replace with an outdated AMI ID
   instance_type = "t2.micro"
-  subnet_id     = aws_subnet.public_subnet.id
+  subnet_id     = aws_subnet.public_subnet_a.id
   vpc_security_group_ids = [aws_security_group.vm_sg.id]
   associate_public_ip_address = true
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
