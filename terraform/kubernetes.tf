@@ -27,6 +27,18 @@ resource "aws_security_group" "k8s_sg" {
   }
 }
 
+resource "aws_subnet" "public_subnet_a" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "ap-south-1a"
+}
+
+resource "aws_subnet" "public_subnet_b" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "ap-south-1b"
+}
+
 ##################################################
 # 1️⃣ Create IAM Role for EKS Cluster
 ##################################################
@@ -65,7 +77,10 @@ resource "aws_eks_cluster" "interview_k8s" {
   version = "1.33"
 
   vpc_config {
-    subnet_ids = [aws_subnet.public_subnet.id]  # Your existing subnets
+    subnet_ids = [
+      aws_subnet.public_subnet_a.id,
+      aws_subnet.public_subnet_b.id
+    ]
   }
 
   depends_on = [
